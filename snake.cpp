@@ -223,9 +223,9 @@ void snakeclass::start()
         if(collision(snake, maxWidth, maxHeight ))
         {
             move(12,36);
-            printw("game_over\n");
+            printw("Game_over\n");
             move(13,36);
-            printw("your score %d \n", score);
+            printw("Your score %d \n", score);
 
             break;
         }
