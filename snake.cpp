@@ -29,22 +29,23 @@ bool collision( std::vector<point>const& snake, int maxWidth, int maxHeight)
     return false;
 }
 
+void initialization()
+{
+    initscr();
+    nodelay(stdscr,true);
+    keypad(stdscr,true);
+    noecho();
+    curs_set(0);
+}
+
 snakeclass::snakeclass() :
   food(),
   score(0),
   delay(110000),
   direction(kNoChois)
 {
-    //////////////////////////////////////////////////////////
-    initscr();
-    nodelay(stdscr,true);
-    keypad(stdscr,true);
-    noecho();
-    curs_set(0);
-    //////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////
-    getmaxyx(stdscr, maxHeight, maxWidth);
+ initialization();
+getmaxyx(stdscr, maxHeight, maxWidth);
 
     for(int i=0; i<maxWidth-1; i++)
     {
