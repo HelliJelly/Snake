@@ -14,9 +14,11 @@ struct point
     point();
  };
 
+
+
 bool collision(std::vector<point>const& snake, int maxWidth, int maxHeigh);
 bool yam(std::vector<point>const& snake, point food);
-
+void initialization();
 class snakeclass
 {
 public:

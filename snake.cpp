@@ -4,6 +4,7 @@
 static const char kFoo = '*';
 static const char kPartchar='x';
 static const char kOldachar=(char)219;
+static const char kNoChois = '1';
 
 point::point()
 {
@@ -18,6 +19,7 @@ bool collision( std::vector<point>const& snake, int maxWidth, int maxHeight)
 
     auto size = snake.size();
 
+
     for(int i=2; i < size; i++)
     {
         if(snake[0].x==snake[i].x && snake[0].y==snake[i].y)
@@ -27,22 +29,23 @@ bool collision( std::vector<point>const& snake, int maxWidth, int maxHeight)
     return false;
 }
 
-snakeclass::snakeclass() :
-  food(),
-  score(0),
-  delay(110000),
-  direction('1')
+void initialization()
 {
-    //////////////////////////////////////////////////////////
     initscr();
     nodelay(stdscr,true);
     keypad(stdscr,true);
     noecho();
     curs_set(0);
-    //////////////////////////////////////////////////////////////////////
+}
 
-    ////////////////////////////////////////////////////////////////
-    getmaxyx(stdscr, maxHeight, maxWidth);
+snakeclass::snakeclass() :
+  food(),
+  score(0),
+  delay(110000),
+  direction(kNoChois)
+{
+ initialization();
+getmaxyx(stdscr, maxHeight, maxWidth);
 
     for(int i=0; i<maxWidth-1; i++)
     {
@@ -172,40 +175,35 @@ void snakeclass::movesnake()
     case KEY_BACKSPACE:
         direction='q';
         break;
-
     }
 
-    if(!yam(snake,food))
+    if (kNoChois == direction) return;
+
+    if(yam(snake,food))
+    {
+        updateFood();
+    }
+    else
     {
         move(snake[snake.size()-1].y,snake[snake.size()-1].x);
         printw(" ");
         refresh();
-        if (!snake.empty())
-            snake.pop_back();
-    }
-    else
-    {
-        updateFood();
+        snake.pop_back();
     }
 
 
     if(direction=='l')
-
     {
         snake.insert(snake.begin(),point(snake[0].x-1,snake[0].y));
     }
-
     else if(direction=='r')
-
     {
         snake.insert(snake.begin(),point(snake[0].x+1,snake[0].y));
     }
-
     else if(direction=='u')
     {
         snake.insert(snake.begin(),point(snake[0].x,snake[0].y-1));
     }
-
     else if(direction=='d')
     {
         snake.insert(snake.begin(),  point(snake[0].x, snake[0].y+1));
