@@ -1,10 +1,9 @@
-#include<snake.h>
+﻿#include<snake.h>
 #include<unistd.h>
 
 static const char kFoo = '*';
 static const char kPartchar='x';
 static const char kOldachar=(char)219;
-static const char kNoChois = '1';
 
 point::point()
 {
@@ -17,19 +16,41 @@ bool collision( std::vector<point>const& snake, int maxWidth, int maxHeight)
     if(snake[0].x==0 || snake[0].x==maxWidth-1 || snake[0].y==0 || snake[0].y==maxHeight-2)
         return true;
 
-    auto size = snake.size();
-
-
-    for(int i=2; i < size; i++)
+    for(int i=2; i < snake.size(); i++)
     {
-        if(snake[0].x==snake[i].x && snake[0].y==snake[i].y)
+        if(snake[0].x==snake[i].x && snake[0].y == snake[i].y)
             return true;
     }
 
     return false;
 }
 
-void initialization()
+bool yam(std::vector<point>const& snake, point food)
+{
+    if(snake[0].x==food.x && snake[0].y==food.y)
+        return true;
+
+    return false;
+}
+
+bool isOpposite(eCommand lhs, eCommand rhs )
+{
+    if(lhs == MOVE_LEFT && rhs == MOVE_RIGHT) return true;
+    if(lhs == MOVE_RIGHT && rhs == MOVE_LEFT) return true;
+    if(lhs == MOVE_UP && rhs == MOVE_DOWN) return true;
+    if(lhs == MOVE_DOWN && rhs == MOVE_UP) return true;
+
+    return false;
+}
+
+eCommand determinateCommand(eCommand last, eCommand prev )
+{
+    if(last == eCommand::NO_CHOISE) return prev;
+    if (isOpposite(last, prev)) return prev;
+    return last;
+}
+
+void initNcurses()
 {
     initscr();
     nodelay(stdscr,true);
@@ -38,15 +59,31 @@ void initialization()
     curs_set(0);
 }
 
-snakeclass::snakeclass() :
-  food(),
-  score(0),
-  delay(110000),
-  direction(kNoChois)
+void shutdownNcurses()
 {
- initialization();
-getmaxyx(stdscr, maxHeight, maxWidth);
+    nodelay(stdscr,false);
+    getch();
+    endwin();
+}
 
+eCommand readLastCommand()
+{
+    int tmp=getch();
+    switch(tmp)
+    {
+    case KEY_LEFT:      return MOVE_LEFT;
+    case KEY_UP:        return MOVE_UP;
+    case KEY_DOWN:      return MOVE_DOWN;
+    case KEY_RIGHT:     return MOVE_RIGHT;
+    case KEY_BACKSPACE: return OUT;
+    case KEY_ENTER:     return PAUSE;
+    case KEY_BTAB:      return SAVE;
+    }
+    return eCommand::NO_CHOISE;
+}
+
+void PlayingField(int maxWidth, int maxHeight)
+{
     for(int i=0; i<maxWidth-1; i++)
     {
         move(0,i);
@@ -70,69 +107,75 @@ getmaxyx(stdscr, maxHeight, maxWidth);
         move(i,maxWidth-2);
         addch(kOldachar);
     }
-    ///////////////////////////////////////////////////////////////////
+}
 
-    srand(time(NULL));
-    putfood();
-
+void collectSnake(std::vector<point>& snake)
+{
     for(int i=0; i<5; i++)
     {
-        snake.push_back(point(40+i, 10));
+      snake.push_back(point(40+i, 10));
     }
+ }
 
+snakeclass::snakeclass() :
+  food(),
+  score(0),
+  delay(110000),
+  command(NO_CHOISE)
+{
+    initNcurses();
+
+    getmaxyx(stdscr, maxHeight, maxWidth);
+    PlayingField( maxWidth, maxHeight);
+    srand(time(NULL));
+    putfood();
+    collectSnake(snake);
+    ///BEGIN
     for(int i=0; i<snake.size(); i++)
     {
         move(snake[i].y, snake[i].x);
         addch(kPartchar);
     }
-    refresh();
+    ///END
 
+    ///BEGIN
     move(maxHeight-1,0);
     printw("%d", score);
+    ///END
+
+    refresh();
 }
 
 snakeclass::~snakeclass()
 {
-    nodelay(stdscr,false);
-    getch();
-    endwin();
-
+   shutdownNcurses();
 }
 
 void snakeclass::putfood()
 {
-    while(1)
+
+    ///BEGIN point getNexFoodPosition(snake, maxWidth, maxHeight)
+    point temp;
+    while(true)
     {
-        int tmpx=rand()%maxWidth+1;
-        int tmpy=rand()%maxHeight+1;
+        temp.x=rand()%maxWidth+1;
+        temp.y=rand()%maxHeight+1;
 
         for(int i=0; i<snake.size(); i++)
 
-            if(snake[i].x==tmpx && snake[i].y==tmpy)
+            if(snake[i].x==temp.x && snake[i].y==temp.y)
                 continue;
 
-        if(tmpx>=maxWidth-2 || tmpy>=maxHeight-3)
+        if(temp.x>=maxWidth-2 || temp.y>=maxHeight-3)
             continue;
-
-        food.x=tmpx;
-        food.y=tmpy;
         break;
-
     }
+    ///end getNexFoodPosition
 
+    food = temp;
     move(food.y,food.x);
     addch(kFoo);
     refresh();
-}
-
-bool yam(std::vector<point>const& snake, point food)
-{
-
-    if(snake[0].x==food.x && snake[0].y==food.y)
-        return true;
-
-    return false;
-
 }
 
 void snakeclass::updateFood()
@@ -145,66 +188,33 @@ void snakeclass::updateFood()
         delay-=10000;
 }
 
+/// move command to parameters; rename command to direction
 void snakeclass::movesnake()
 {
-    int tmp=getch();
-
-    switch(tmp)
-
-    {
-    case KEY_LEFT:
-        if(direction!='r')
-            direction='l';
-        break;
-
-    case KEY_UP:
-        if(direction!='d')
-            direction='u';
-        break;
-
-    case KEY_DOWN:
-        if(direction!='u')
-            direction='d';
-        break;
-
-    case KEY_RIGHT:
-        if(direction!='l')
-            direction='r';
-        break;
-
-    case KEY_BACKSPACE:
-        direction='q';
-        break;
-    }
-
-    if (kNoChois == direction) return;
-
     if(yam(snake,food))
     {
+        snake.insert(snake.begin(), food);
         updateFood();
     }
-    else
-    {
-        move(snake[snake.size()-1].y,snake[snake.size()-1].x);
-        printw(" ");
-        refresh();
-        snake.pop_back();
-    }
 
+    move(snake[snake.size()-1].y,snake[snake.size()-1].x);
+    printw(" ");
+    refresh();
+    snake.pop_back();
 
-    if(direction=='l')
+    if(command==MOVE_LEFT)
     {
         snake.insert(snake.begin(),point(snake[0].x-1,snake[0].y));
     }
-    else if(direction=='r')
+    else if(command==MOVE_RIGHT)
     {
         snake.insert(snake.begin(),point(snake[0].x+1,snake[0].y));
     }
-    else if(direction=='u')
+    else if(command==MOVE_UP)
     {
         snake.insert(snake.begin(),point(snake[0].x,snake[0].y-1));
     }
-    else if(direction=='d')
+    else if(command==MOVE_DOWN)
     {
         snake.insert(snake.begin(),  point(snake[0].x, snake[0].y+1));
     }
@@ -228,14 +238,22 @@ void snakeclass::start()
             break;
         }
 
-        movesnake();
-        if(direction=='q')
-        {
+        auto newCommand = readLastCommand();
+        command = determinateCommand(newCommand, command);
+
+        switch (command) {
+        case OUT:
+            return;
+        case NO_CHOISE:
+            break;
+        case MOVE_LEFT:
+        case MOVE_RIGHT:
+        case MOVE_UP:
+        case MOVE_DOWN:
+            movesnake();
             break;
         }
 
         usleep(delay);
-
-
     }
 }
